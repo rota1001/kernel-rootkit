@@ -58,3 +58,4 @@ rootfs.ext2
 .vscode/*
 
 user
+*.bin

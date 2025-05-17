@@ -19,4 +19,7 @@ module:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
 
 clean:
+	mv shellcode.s shellcode.bk
 	$(MAKE) -C $(KDIR) M=$(PWD) clean
+	mv shellcode.bk shellcode.s
+	rm *.bin
