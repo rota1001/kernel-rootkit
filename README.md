@@ -1,4 +1,5 @@
 # kernel-rootkit
+This kernel rootkit aims at linux v6.11+ kernel versions with x86-64 architecture. All the features will be tested on ubuntu 24.04 and some other experiment environments.
 
 ## Claim
 This rootkit is for **Educational Purpose**, do not use it to do anything illegally.
