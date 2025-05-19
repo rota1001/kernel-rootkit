@@ -1,5 +1,6 @@
 #include <linux/init.h>
 #include <linux/module.h>
+#include "hook.h"
 
 MODULE_LICENSE("GPL");
 
@@ -13,6 +14,7 @@ static int __init rootkit_init(void)
 
 static void __exit rootkit_exit(void)
 {
+    hook_release();
     printk(KERN_ALERT "rookit exit\n");
 }
 

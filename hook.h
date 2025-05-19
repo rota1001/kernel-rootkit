@@ -1,5 +1,7 @@
 #pragma once
 #include <linux/list.h>
+#include <linux/mm.h>
+#include <linux/vmalloc.h>
 
 #define HOOK_SIZE 12
 
@@ -24,14 +26,14 @@ void hook_start(unsigned long org_func, unsigned long evil_func);
  *
  * @addr: The address of the hooked funciton
  */
-void hook_pause(void *addr);
+void hook_pause(unsigned long addr);
 
 /**
  * hook_resume - Resume the hook paused by `hook_start`
  *
  * @addr: The address of the paused function
  */
-void hook_resume(void *addr);
+void hook_resume(unsigned long addr);
 
 /**
  * hook_release - Release all the hook
