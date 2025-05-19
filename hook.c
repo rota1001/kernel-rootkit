@@ -42,3 +42,32 @@ void hook_release(void)
         vfree(now);
     }
 }
+
+static struct hook *find_hook_by_addr(unsigned long addr)
+{
+    struct hook *ret;
+    list_for_each_entry (ret, &hook_list, list)
+        if (ret->org_func == addr)
+            return ret;
+    return NULL;
+}
+
+void hook_pause(unsigned long addr)
+{
+    struct hook *hook_node = find_hook_by_addr(addr);
+    if (!hook_node)
+        return;
+    make_rw(hook_node->org_func);
+    memcpy((void *) hook_node->org_func, hook_node->org_code, HOOK_SIZE);
+    make_ro(hook_node->org_func);
+}
+
+void hook_resume(unsigned long addr)
+{
+    struct hook *hook_node = find_hook_by_addr(addr);
+    if (!hook_node)
+        return;
+    make_rw(hook_node->org_func);
+    memcpy((void *) hook_node->org_func, hook_node->evil_code, HOOK_SIZE);
+    make_ro(hook_node->org_func);
+}
