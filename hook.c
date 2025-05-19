@@ -30,3 +30,15 @@ void hook_start(unsigned long org_func, unsigned long evil_func)
     make_ro(org_func);
     list_add(&new_hook->list, &hook_list);
 }
+
+void hook_release(void)
+{
+    struct hook *now, *safe;
+    list_for_each_entry_safe (now, safe, &hook_list, list) {
+        make_rw(now->org_func);
+        memcpy((void *) now->org_func, now->org_code, HOOK_SIZE);
+        make_ro(now->org_func);
+        list_del(&now->list);
+        vfree(now);
+    }
+}
