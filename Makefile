@@ -1,5 +1,5 @@
 TARGET = rootkit
-rootkit-objs = main.o hook.o
+rootkit-objs = main.o hook.o devices.o
 obj-m := $(TARGET).o
 
 PWD := $(shell pwd)
