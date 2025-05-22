@@ -8,7 +8,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "common.h"
+#include "../common.h"
 
 #define ALIGN_UP(x, mask) (((x) + mask) & ~mask)
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))

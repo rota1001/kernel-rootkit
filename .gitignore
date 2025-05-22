@@ -57,7 +57,7 @@ rootfs.ext2
 
 .vscode/*
 
-user
+./user
 *.bin
 
 rootfs/*
