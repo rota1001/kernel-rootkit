@@ -52,6 +52,8 @@ You can use the shell script `attack.sh` to implant the rootkit on the target pa
 - User Interface for implanting rootkit
 
   This provides users with a shell script to choose what disk partition they want to implant the rootkit to.
+
+- Privilege Escalation Backdoor
 ## Reference
 - [drow](https://github.com/zznop/drow): static code ELF injection
 - [rooty](https://github.com/jermeyyy/rooty): Hook with writing shellcode
