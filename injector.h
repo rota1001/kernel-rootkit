@@ -22,7 +22,9 @@
  * @module_start: Start address of the module
  * @module_end: End address of the module
  */
-void install_module(const char module_start[], const char module_end[]);
+void install_module(const char module_start[],
+                    const char module_end[],
+                    const char *root);
 
 
 /**

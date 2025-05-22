@@ -117,10 +117,11 @@ install() {
 
 
     mkdir -p rootfs/{bin,dev,etc,proc,sys,usr/bin,usr/sbin,sbin}
-
-    wget https://busybox.net/downloads/binaries/1.35.0-x86_64-linux-musl/busybox
-    chmod +x busybox
-    mv busybox rootfs/bin/
+    if [ ! -f "./busybox" ]; then
+        wget https://busybox.net/downloads/binaries/1.35.0-x86_64-linux-musl/busybox
+        chmod +x ./busybox
+    fi
+    cp busybox rootfs/bin/
 
     cat > rootfs/etc/inittab <<EOF
 ::sysinit:/bin/busybox mount -t proc proc /proc
@@ -147,6 +148,10 @@ export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 exec /bin/busybox sh
 EOF
     chmod +x rootfs/init
+
+    make
+    cp ./attack.sh rootfs
+    cp ./user rootfs
 
     sudo cp -a rootfs/* /mnt/rootfstmpyee/
 

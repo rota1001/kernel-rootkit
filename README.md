@@ -22,13 +22,19 @@ make
 Please read the **Claim** before you do it.
 
 If you know what you are doing, use `sudo` to execute this program. Your `systemd` will be patched, and the rootkit will be automatically inserted everytime you boot your kernel.
+The parameter is the path to the target root, and all the path setting in the program will be relative to this path. For example, if the rootfs is stored on a partition, you can mount it on a directory and pass the absolute path of that partition as the parameter to run this program.
 ```
-sudo ./user
+sudo ./user [absolute path to target root]
 ```
 
 You can use the shell script `create-usb.sh` to create a minimal USB.
 ```
 ./create-usb.sh
+```
+
+You can use the shell script `attack.sh` to implant the rootkit on the target partition. This can be run in the Live USB created above, and will be placed at the root directory defaultly.
+```
+./attack.sh
 ```
 
 ## Features
@@ -42,6 +48,10 @@ You can use the shell script `create-usb.sh` to create a minimal USB.
 - Create a minimal Live USB with one click
 
   This provides a shell script to create a minimal Live USB to implant the rootkit.
+
+- User Interface for implanting rootkit
+
+  This provides users with a shell script to choose what disk partition they want to implant the rootkit to.
 ## Reference
 - [drow](https://github.com/zznop/drow): static code ELF injection
 - [rooty](https://github.com/jermeyyy/rooty): Hook with writing shellcode
