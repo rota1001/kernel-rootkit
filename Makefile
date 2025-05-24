@@ -1,6 +1,6 @@
 TARGET = rootkit
 KERNEL_SRC = src/kernel
-rootkit-objs = $(KERNEL_SRC)/main.o $(KERNEL_SRC)/hook.o $(KERNEL_SRC)/devices.o $(KERNEL_SRC)/utils.o
+rootkit-objs = $(KERNEL_SRC)/main.o $(KERNEL_SRC)/hook.o $(KERNEL_SRC)/devices.o $(KERNEL_SRC)/utils.o $(KERNEL_SRC)/symbols.o
 obj-m := $(TARGET).o
 
 PWD := $(shell pwd)
