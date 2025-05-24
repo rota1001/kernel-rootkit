@@ -16,7 +16,9 @@ static void make_ro(unsigned long addr)
     pte->pte = pte->pte & ~_PAGE_RW;
 }
 
-void hook_start(unsigned long org_func, unsigned long evil_func)
+void hook_start(unsigned long org_func,
+                unsigned long evil_func,
+                const char *name)
 {
     struct hook *new_hook = (struct hook *) vmalloc(sizeof(struct hook));
     new_hook->org_func = org_func;
@@ -28,6 +30,8 @@ void hook_start(unsigned long org_func, unsigned long evil_func)
     make_rw(org_func);
     memcpy((void *) org_func, new_hook->evil_code, HOOK_SIZE);
     make_ro(org_func);
+    strncpy(new_hook->name, name, MAX_NAME);
+    new_hook->name[MAX_NAME - 1] = 0;
     list_add(&new_hook->list, &hook_list);
 }
 
@@ -41,6 +45,15 @@ void hook_release(void)
         list_del(&now->list);
         vfree(now);
     }
+}
+
+struct hook *find_hook_by_name(const char *name)
+{
+    struct hook *ret;
+    list_for_each_entry (ret, &hook_list, list)
+        if (!strcmp(ret->name, name))
+            return ret;
+    return NULL;
 }
 
 static struct hook *find_hook_by_addr(unsigned long addr)
