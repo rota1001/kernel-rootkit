@@ -55,3 +55,12 @@ void hook_release(void);
         func(__VA_ARGS__);            \
         hook_resume(func);            \
     } while (0)
+
+
+#define CALL_ORIGINAL_FUNC_RET(func, type, ...)           \
+    ({                                                    \
+        hook_pause(func);                                 \
+        (type) call_org_func_ret_ret = func(__VA_ARGS__); \
+        hook_resume(func);                                \
+        call_org_func_ret_ret;                            \
+    })
