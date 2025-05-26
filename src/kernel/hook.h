@@ -63,17 +63,17 @@ struct hook *find_hook_by_name(const char *name);
 #define CALL_ORIGINAL_FUNC(func, ...)      \
     do {                                   \
         hook_pause((unsigned long) func);  \
-        func(__VA_ARGS__);                 \
+        (func)(__VA_ARGS__);               \
         hook_resume((unsigned long) func); \
     } while (0)
 
 
-#define CALL_ORIGINAL_FUNC_RET(func, type, ...)         \
-    ({                                                  \
-        hook_pause(func);                               \
-        type call_org_func_ret_ret = func(__VA_ARGS__); \
-        hook_resume(func);                              \
-        call_org_func_ret_ret;                          \
+#define CALL_ORIGINAL_FUNC_RET(func, type, ...)           \
+    ({                                                    \
+        hook_pause(func);                                 \
+        type call_org_func_ret_ret = (func)(__VA_ARGS__); \
+        hook_resume(func);                                \
+        call_org_func_ret_ret;                            \
     })
 
 /**
