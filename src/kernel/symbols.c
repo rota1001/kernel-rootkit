@@ -273,10 +273,7 @@ unsigned long get_x64_sys_call_addr(void)
  * syscall_stealer - Steal the syscall
  *
  * This is the function to hook syscall function. It will put the syscall in the
- * `ax` field of `regs`. Moreover, the evil caller has to make sure the `di` and
- * `si` registers are set to 0xdeadbeef if it wants to get the address of the
- * syscall function. Otherwise, it will call the original syscall function,
- * which is the way this function handling the normal syscall.
+ * `ax` field of `regs`.
  */
 noinline static long syscall_stealer(struct pt_regs *regs)
 {
@@ -308,7 +305,6 @@ int init_syscall_table(void *data)
         addr += len;
     }
     struct pt_regs regs;
-    ((long (*)(struct pt_regs *, unsigned int)) x64_sys_call_addr)(&regs, 0);
     for (int i = 0; i < NR_syscalls; i++) {
         if (i == __NR_exit_group || i == __NR_exit)
             continue;
