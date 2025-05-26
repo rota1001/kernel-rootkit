@@ -1,5 +1,6 @@
-# kernel-rootkit
-This kernel rootkit aims at linux v6.11+ kernel versions with x86-64 architecture. All the features will be tested on ubuntu 24.04 and some other experiment environments.
+# ksymless
+
+This is a kernel rootkit that works without kallsyms and kprobe support. It aims at linux v6.11+ kernel versions with x86-64 architecture. All the features will be tested on ubuntu 24.04 and some other experiment environments.
 
 ## Claim
 This rootkit is for **Educational Purpose**, do not use it to do anything illegally.
@@ -38,6 +39,9 @@ You can use the shell script `attack.sh` to implant the rootkit on the target pa
 ```
 
 ## Features
+- Resolve Syscalls without Kallsyms
+
+  It gets syscall functions by disassembling the `x64_sys_call` function, hooking the functions potentially to be called and testing one by one during runtime.
 - Persistence
 
   Injecting the shellcode and kernel module into `systemd`, which will definitly be executed by root user.
@@ -54,6 +58,8 @@ You can use the shell script `attack.sh` to implant the rootkit on the target pa
   This provides users with a shell script to choose what disk partition they want to implant the rootkit to.
 
 - Privilege Escalation Backdoor
+
+- Hiding module
 ## Reference
 - [drow](https://github.com/zznop/drow): static code ELF injection
 - [rooty](https://github.com/jermeyyy/rooty): Hook with writing shellcode

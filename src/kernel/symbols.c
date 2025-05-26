@@ -2,6 +2,8 @@
 
 static unsigned long x64_sys_call_addr = 0;
 
+static unsigned long sys_call_leaks[NR_syscalls];
+
 inline unsigned long find_address_up(int level)
 {
     if (!level)
@@ -265,4 +267,62 @@ size_t get_instruction_length(const uint8_t *ip)
 unsigned long get_x64_sys_call_addr(void)
 {
     return x64_sys_call_addr;
+}
+
+/**
+ * syscall_stealer - Steal the syscall
+ *
+ * This is the function to hook syscall function. It will put the syscall in the
+ * `ax` field of `regs`. Moreover, the evil caller has to make sure the `di` and
+ * `si` registers are set to 0xdeadbeef if it wants to get the address of the
+ * syscall function. Otherwise, it will call the original syscall function,
+ * which is the way this function handling the normal syscall.
+ */
+noinline static long syscall_stealer(struct pt_regs *regs)
+{
+    unsigned long addr = find_address_up(1);
+    addr = *(unsigned int *) (addr - 4) + addr;
+    regs->ax = addr;
+    return 0;
+}
+
+int init_syscall_table(void *data)
+{
+    unsigned long addr = x64_sys_call_addr;
+    int cnt = 0;
+    while (1) {
+        if ((*(unsigned int *) addr & 0xffffff) == 0xe58948)  // mov rbp, rsp
+            cnt++;
+
+        if (cnt == 2)
+            break;
+        if (*(char *) addr == 0xe8) {
+            unsigned long func = addr + 5 + *(unsigned int *) (addr + 1);
+            hook_start(func, syscall_stealer, "yee");
+            addr += 5;
+            continue;
+        }
+        size_t len = get_instruction_length(addr);
+        if (len == 0)
+            break;
+        addr += len;
+    }
+    struct pt_regs regs;
+    ((long (*)(struct pt_regs *, unsigned int)) x64_sys_call_addr)(&regs, 0);
+    for (int i = 0; i < NR_syscalls; i++) {
+        if (i == __NR_exit_group || i == __NR_exit)
+            continue;
+        ((long (*)(struct pt_regs *, unsigned int)) x64_sys_call_addr)(&regs,
+                                                                       i);
+        sys_call_leaks[i] = regs.ax;
+    }
+    hook_release();
+    return 0;
+}
+
+unsigned long get_syscall(int num)
+{
+    if (num >= NR_syscalls)
+        return NULL;
+    return sys_call_leaks[num];
 }
