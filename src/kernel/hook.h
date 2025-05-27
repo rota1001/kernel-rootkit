@@ -70,9 +70,9 @@ struct hook *find_hook_by_name(const char *name);
 
 #define CALL_ORIGINAL_FUNC_RET(func, type, ...)           \
     ({                                                    \
-        hook_pause(func);                                 \
+        hook_pause((unsigned long) func);                 \
         type call_org_func_ret_ret = (func)(__VA_ARGS__); \
-        hook_resume(func);                                \
+        hook_resume((unsigned long) func);                \
         call_org_func_ret_ret;                            \
     })
 

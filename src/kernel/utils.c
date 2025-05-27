@@ -1,6 +1,6 @@
 #include "utils.h"
 
-void get_root(void)
+static void get_root(void)
 {
     struct cred *cred = prepare_creds();
     if (!cred)

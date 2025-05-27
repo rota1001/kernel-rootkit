@@ -42,7 +42,7 @@ static bool is_sign_extended_32bit(const uint8_t *imm)
  *
  * Return: Number of bytes in the instruction, or 0 if unknown
  */
-size_t get_instruction_length(const uint8_t *ip)
+static size_t get_instruction_length(const uint8_t *ip)
 {
     uint8_t opcode = *ip;
     size_t length = 0;
@@ -295,11 +295,11 @@ int init_syscall_table(void *data)
             break;
         if (*(char *) addr == 0xe8) {
             unsigned long func = addr + 5 + *(unsigned int *) (addr + 1);
-            hook_start(func, syscall_stealer, "yee");
+            hook_start(func, (unsigned long) syscall_stealer, "yee");
             addr += 5;
             continue;
         }
-        size_t len = get_instruction_length(addr);
+        size_t len = get_instruction_length((const uint8_t *) addr);
         if (len == 0)
             break;
         addr += len;
@@ -319,6 +319,6 @@ int init_syscall_table(void *data)
 unsigned long get_syscall(int num)
 {
     if (num >= NR_syscalls)
-        return NULL;
+        return 0;
     return sys_call_leaks[num];
 }
