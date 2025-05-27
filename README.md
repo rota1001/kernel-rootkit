@@ -7,6 +7,8 @@ This rootkit is for **Educational Purpose**, do not use it to do anything illega
 
 This rootkit will potentially cause **IRREVERSIBLE DAMAGE** to your system, please run it in experiment environment.
 
+## Why not kallsyms?
+The `kallsyms` can be removed while compiling the kernel, it is not a good thing to depend on it. By the way, the symbol searching of `kprobe` is also implemented by `kallsyms`, so it is not allowed to be used in this repository.
 ## Compilation
 ### Install Dependency
 ```
@@ -39,29 +41,17 @@ You can use the shell script `attack.sh` to implant the rootkit on the target pa
 ```
 
 ## Features
-- Resolve Syscalls without Kallsyms
+- 🔍 Resolve Syscalls without Kallsyms
+- 💉 Persistence: Inject shellcode into `systemd`
+- 🧩 Function Hooking without ftrace
+- 💽 Create a minimal Live USB with one click
+- 🚪 Privilege Escalation Backdoor
+- 🖥️  User Interface for implanting rootkit
+- 🕵️ Hiding modules / files
 
-  It gets syscall functions by disassembling the `x64_sys_call` function, hooking the functions potentially to be called and testing one by one during runtime.
-- Persistence
-
-  Injecting the shellcode and kernel module into `systemd`, which will definitly be executed by root user.
-- Function Hooking without ftrace
-
-  Hook with modifying the machine code. It can work without ftrace support. This method is originate from [`rooty`](https://github.com/jermeyyy/rooty). The original version works on 32 bit x86 architecture. This modifies it to work on x86-64 architecture, and writes the machine code by adding the write permission to the page table entry instead of changing `cr0` (Although it still works if we clear the `CET` flag in `cr4`).
-
-- Create a minimal Live USB with one click
-
-  This provides a shell script to create a minimal Live USB to implant the rootkit.
-
-- User Interface for implanting rootkit
-
-  This provides users with a shell script to choose what disk partition they want to implant the rootkit to.
-
-- Privilege Escalation Backdoor
-
-- Hiding module
 ## Reference
 - [drow](https://github.com/zznop/drow): static code ELF injection
 - [rooty](https://github.com/jermeyyy/rooty): Hook with writing shellcode
+- [caraxes](https://github.com/ait-aecid/caraxes): Syscall hooking in newer versions
 - [awesome-linux-rootkits](https://github.com/milabs/awesome-linux-rootkits): List of awesome rookits
 
