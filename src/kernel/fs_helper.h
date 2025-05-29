@@ -7,10 +7,9 @@
 #include "internel.h"
 
 /**
- * proc_find_init - Calculate offset of element in proc_dir_entry
+ * proc_find_init - Get the `proc_dir_entry` structure of /proc
  *
- * This deals with the condition that `__randomize_layout` is
- * enabled in the kernel config.
+ * Notice that this should be called before any other functions below
  */
 void proc_find_init(void);
 
