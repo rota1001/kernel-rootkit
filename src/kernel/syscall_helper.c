@@ -1,4 +1,4 @@
-#include "symbols.h"
+#include "syscall_helper.h"
 
 static unsigned long x64_sys_call_addr = 0;
 
@@ -148,8 +148,10 @@ static size_t get_instruction_length(const uint8_t *ip)
             bool is_16bit = (ip[length + 1] == 0x66);
 
             if (mod == 0b11) { /* Register operand */
-                return base_len +
-                       (is_8bit ? 1 : is_16bit ? 2 : is_64bit ? 4 : 4);
+                return base_len + (is_8bit    ? 1
+                                   : is_16bit ? 2
+                                   : is_64bit ? 4
+                                              : 4);
             } else { /* Memory operand */
                 size_t mem_len = base_len;
 

@@ -1,7 +1,8 @@
 #include <linux/init.h>
 #include <linux/module.h>
+#include "fs_helper.h"
 #include "hook.h"
-#include "symbols.h"
+#include "syscall_helper.h"
 #include "utils.h"
 
 MODULE_LICENSE("GPL");
