@@ -42,6 +42,7 @@ You can use the shell script `attack.sh` to implant the rootkit on the target pa
 
 ## Features
 - 🔍 Resolve Syscalls without Kallsyms
+- 📁 Resolve procfs operations by path
 - 💉 Persistence: Inject shellcode into `systemd`
 - 🧩 Function Hooking without ftrace
 - 💽 Create a minimal Live USB with one click
