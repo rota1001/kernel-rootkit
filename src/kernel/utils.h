@@ -42,7 +42,7 @@ void hide_file(const char *name);
 void show_file(const char *name);
 
 /**
- * hide_port - Hide the port shown by /proc/net/tcp
+ * hide_port - Hide the port shown by /proc/net/tcp and /proc/net/udp
  */
 void hide_port(unsigned int port);
 

