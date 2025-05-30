@@ -48,11 +48,12 @@ You can use the shell script `attack.sh` to implant the rootkit on the target pa
 - 💽 Create a minimal Live USB with one click
 - 🚪 Privilege Escalation Backdoor
 - 🖥️  User Interface for implanting rootkit
-- 🕵️ Hiding modules / files
+- 🕵️ Hiding modules / files / network connections
 
 ## Reference
 - [drow](https://github.com/zznop/drow): static code ELF injection
 - [rooty](https://github.com/jermeyyy/rooty): Hook with writing shellcode
 - [caraxes](https://github.com/ait-aecid/caraxes): Syscall hooking in newer versions
-- [awesome-linux-rootkits](https://github.com/milabs/awesome-linux-rootkits): List of awesome rookits
+- [linux_kernel_hacking](https://github.com/xcellerator/linux_kernel_hacking): port hiding / kernel module loading
+- [awesome-linux-rootkits](https://github.com/milabs/awesome-linux-rootkits): List of awesome rootkits
 
