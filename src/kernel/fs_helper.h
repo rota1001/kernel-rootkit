@@ -3,6 +3,7 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/string.h>
+#include <net/inet_sock.h>
 #include <net/net_namespace.h>
 #include "internel.h"
 

