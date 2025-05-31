@@ -7,12 +7,6 @@
 #include <net/net_namespace.h>
 #include "internel.h"
 
-/**
- * proc_find_init - Get the `proc_dir_entry` structure of /proc
- *
- * Notice that this should be called before any other functions below
- */
-void proc_find_init(void);
 
 #define get_member_ptr(base, offset, type) \
     ((type *) (((char *) (base)) + (offset)))
@@ -34,7 +28,7 @@ struct proc_dir_entry *proc_find_by_path(const char *path);
 struct proc_ops *proc_get_proc_ops_by_path(const char *path);
 
 /**
- * proc_get_ops_by_path - Get the `proc_operations` by pat
+ * proc_get_ops_by_path - Get the `proc_operations` by path
  */
 struct seq_operations *proc_get_seq_ops_by_path(const char *path);
 

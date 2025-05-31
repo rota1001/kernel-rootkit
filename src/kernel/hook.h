@@ -4,7 +4,7 @@
 #include <linux/vmalloc.h>
 
 #define HOOK_SIZE 12
-#define MAX_NAME 16
+#define MAX_NAME 32
 
 struct hook {
     unsigned long org_func;
@@ -68,12 +68,12 @@ struct hook *find_hook_by_name(const char *name);
     } while (0)
 
 
-#define CALL_ORIGINAL_FUNC_RET(func, type, ...)           \
-    ({                                                    \
-        hook_pause((unsigned long) func);                 \
-        type call_org_func_ret_ret = (func)(__VA_ARGS__); \
-        hook_resume((unsigned long) func);                \
-        call_org_func_ret_ret;                            \
+#define CALL_ORIGINAL_FUNC_RET(func, type, ...)            \
+    ({                                                     \
+        hook_pause((unsigned long) func);                  \
+        type call_org_func_ret_ret = (func) (__VA_ARGS__); \
+        hook_resume((unsigned long) func);                 \
+        call_org_func_ret_ret;                             \
     })
 
 /**

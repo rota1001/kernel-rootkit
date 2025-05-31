@@ -45,3 +45,24 @@ struct proc_dir_entry {
     u8 namelen;
     char inline_name[];
 };
+
+union proc_op {
+    int (*proc_get_link)(struct dentry *, struct path *);
+    int (*proc_show)(struct seq_file *m,
+                     struct pid_namespace *ns,
+                     struct pid *pid,
+                     struct task_struct *task);
+    int lsmid;
+};
+
+struct proc_inode {
+    struct pid *pid;
+    unsigned int fd;
+    union proc_op op;
+    struct proc_dir_entry *pde;
+    struct ctl_table_header *sysctl;
+    const struct ctl_table *sysctl_entry;
+    struct hlist_node sibling_inodes;
+    const struct proc_ns_operations *ns_ops;
+    struct inode vfs_inode;
+};
