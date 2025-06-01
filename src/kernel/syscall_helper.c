@@ -4,24 +4,17 @@ static unsigned long x64_sys_call_addr = 0;
 
 static unsigned long sys_call_leaks[NR_syscalls];
 
-inline unsigned long find_address_up(int level)
+static noinline unsigned long find_address_up(int level)
 {
+    level++;
     if (!level)
         return 0;
-    unsigned long addr;
+    volatile unsigned long addr;
     __asm__ __volatile__("mov %%rbp, %[addr]\n" : [addr] "=r"(addr));
     for (int i = 0; i < level - 1; i++)
         addr = *(unsigned long *) addr;
     addr = *(unsigned long *) (addr + 8);
     return addr;
-}
-
-inline void init_x64_sys_call(void)
-{
-    unsigned long addr = find_address_up(7);
-    while (*(unsigned int *) addr != 0xe5894855)
-        addr--;
-    x64_sys_call_addr = addr;
 }
 
 
@@ -30,6 +23,29 @@ static bool is_sign_extended_32bit(const uint8_t *imm)
 {
     const uint32_t *val = (const uint32_t *) imm;
     return (val[1] == 0) || (val[1] == 0xFFFFFFFF);
+}
+
+static size_t get_modrm_length(const uint8_t *modrm_ptr)
+{
+    uint8_t modrm = *modrm_ptr;
+    uint8_t mod = modrm >> 6;
+    uint8_t rm = modrm & 0x7;
+
+    size_t len = 1; /* ModR/M byte itself */
+
+    /* SIB byte (if applicable) */
+    if (rm == 4 && mod != 3) /* SIB present */
+        len += 1;
+
+    /* Displacement */
+    if (mod == 1) /* 1-byte disp */
+        len += 1;
+    else if (mod == 2) /* 4-byte disp */
+        len += 4;
+    else if (mod == 0 && rm == 5) /* RIP-relative */
+        len += 4;
+
+    return len;
 }
 
 /**
@@ -48,11 +64,20 @@ static size_t get_instruction_length(const uint8_t *ip)
     size_t length = 0;
     bool has_rex = false;
 
+    /* Check for ENDBR64 */
+    if (*(uint32_t *) ip == 0xFA1E0FF3)
+        return 4;
+
     /* Check for REX prefix (0x40-0x4F) */
     if ((opcode & 0xF0) == 0x40) {
         has_rex = true;
         length++;
         opcode = ip[1]; /* Next byte is the actual opcode */
+    }
+
+    if (opcode == 0x66) {
+        length++;
+        opcode = ip[length];
     }
 
     switch (opcode) {
@@ -206,36 +231,70 @@ static size_t get_instruction_length(const uint8_t *ip)
 
     /* Two-byte opcode instructions (0F prefix) */
     case 0x0F: {
-        uint8_t opcode2 = ip[length + 1];
-        length += 2; /* 0F + second opcode */
+        uint8_t second_byte = ip[length + 1];
+        length += 2; /* 0F + second byte */
 
-        switch (opcode2) {
-        case 0x1F: {
-            uint8_t modrm = ip[length + 2];
-            uint8_t mod = modrm >> 6;
-
-            /* Base length: 0F 1F + ModRM */
-            size_t nop_length = length + 3;
-
-            /* Handle displacement bytes */
-            if (mod == 0x01) {
-                nop_length += 1; /* disp8 */
-            } else if (mod == 0x02) {
-                nop_length += 4; /* disp32 */
-            }
-            /* mod == 0x00 needs no displacement */
-
-            return nop_length;
-        }
-        case 0x80 ... 0x8F: /* Jcc rel32 */
+        switch (second_byte) {
+        /* Conditional jumps (4-byte displacement) */
+        case 0x80: /* JO rel32 */
+        case 0x81: /* JNO rel32 */
+        case 0x82: /* JB/JNAE/JC rel32 */
+        case 0x83: /* JNB/JAE/JNC rel32 */
+        case 0x84: /* JZ/JE rel32 */
+        case 0x85: /* JNZ/JNE rel32 */
+        case 0x86: /* JBE/JNA rel32 */
+        case 0x87: /* JA/JNBE rel32 */
+        case 0x88: /* JS rel32 */
+        case 0x89: /* JNS rel32 */
+        case 0x8A: /* JP/JPE rel32 */
+        case 0x8B: /* JNP/JPO rel32 */
+        case 0x8C: /* JL/JNGE rel32 */
+        case 0x8D: /* JNL/JGE rel32 */
+        case 0x8E: /* JLE/JNG rel32 */
+        case 0x8F: /* JNLE/JG rel32 */
             return length + 4;
-        case 0x90 ... 0x9F: /* SETcc */
-        case 0xB6:          /* MOVZX */
-        case 0xBE:          /* MOVSX */
-        case 0xC1:          /* XADD */
-            return length + 1;
-        default:
+
+        /* MOVZX/MOVSX */
+        case 0xB6: /* MOVZX r32, r/m8 */
+        case 0xB7: /* MOVZX r32, r/m16 */
+        case 0xBE: /* MOVSX r32, r/m8 */
+        case 0xBF: /* MOVSX r32, r/m16 */
+            return length + get_modrm_length(ip + length);
+
+        /* CPUID, RDTSC, etc */
+        case 0xA2: /* CPUID */
+        case 0x31: /* RDTSC */
+        case 0x01: /* SGDT/INVLPG (system) */
             return length;
+
+        /* SSE/AVX instructions */
+        case 0x10 ... 0x17: /* MOVUPS/MOVUPD/MOVSS/MOVSD */
+        case 0x28 ... 0x2F: /* MOVAPS/MOVAPD */
+        case 0x58 ... 0x5F: /* ADDPS/ADDPD/ADDSS/ADDSD */
+        case 0xC2:          /* CMPPS/CMPPD */
+            return length + get_modrm_length(ip + length);
+
+        /* PREFETCH/TEST */
+        case 0x18: /* PREFETCH */
+        case 0x1F: /* NOP (multi-byte) */
+            if (second_byte == 0x1F) {
+                /* Handle multi-byte NOP (e.g., 66 0F 1F 00) */
+                uint8_t modrm = ip[length];
+                if ((modrm & 0xC0) == 0xC0) /* Register form */
+                    return length + 1;
+                else
+                    return length + get_modrm_length(ip + length);
+            }
+            return length + get_modrm_length(ip + length);
+
+        /* SYSCALL/SYSRET */
+        case 0x05: /* SYSCALL */
+        case 0x07: /* SYSRET */
+            return length;
+
+        default:
+            /* Unknown 0F-prefixed instruction */
+            return 0;
         }
     }
 
@@ -266,6 +325,47 @@ static size_t get_instruction_length(const uint8_t *ip)
     return 0; /* Unknown instruction */
 }
 
+noinline void init_x64_sys_call(void)
+{
+    volatile unsigned long addr;
+    int cnt;
+    int calls_num;
+    int ans = 0;
+    for (int i = 1; i <= 9; i++) {
+        addr = find_address_up(i);
+        if (*(char *) (addr - 5) != 0xe8)
+            continue;
+        addr = addr + *(int *) (addr - 4);
+        cnt = 0;
+        calls_num = 0;
+        while (1) {
+            if ((*(unsigned int *) addr & 0xffffff) ==
+                0xe58948)  // mov rbp, rsp
+                cnt++;
+            if (cnt == 2)
+                break;
+            if (*(char *) addr == 0xe8) {
+                calls_num++;
+                addr += 5;
+                continue;
+            }
+            size_t len = get_instruction_length((const uint8_t *) addr);
+            if (!len)
+                break;
+            addr += len;
+        }
+        if (calls_num > 100) {
+            ans = i;
+            break;
+        }
+    }
+    if (ans) {
+        addr = find_address_up(ans);
+        x64_sys_call_addr = addr + *(int *) (addr - 4);
+    }
+}
+
+
 unsigned long get_x64_sys_call_addr(void)
 {
     return x64_sys_call_addr;
@@ -279,8 +379,8 @@ unsigned long get_x64_sys_call_addr(void)
  */
 noinline static long syscall_stealer(struct pt_regs *regs)
 {
-    unsigned long addr = find_address_up(1);
-    addr = *(unsigned int *) (addr - 4) + addr;
+    volatile unsigned long addr = find_address_up(1);
+    addr = *(int *) (addr - 4) + addr;
     regs->ax = addr;
     return 0;
 }
@@ -296,7 +396,7 @@ int init_syscall_table(void *data)
         if (cnt == 2)
             break;
         if (*(char *) addr == 0xe8) {
-            unsigned long func = addr + 5 + *(unsigned int *) (addr + 1);
+            unsigned long func = addr + 5 + *(int *) (addr + 1);
             hook_start(func, (unsigned long) syscall_stealer, "yee");
             addr += 5;
             continue;

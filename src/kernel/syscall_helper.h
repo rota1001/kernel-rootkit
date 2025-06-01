@@ -10,7 +10,7 @@
  * called first. Moreover, this function has to be called in the init function
  * of kernel module without any indirectly called.
  */
-inline void init_x64_sys_call(void);
+noinline void init_x64_sys_call(void);
 
 /**
  * get_x64_syscall_addr - get the address of `x64_sys_call`
