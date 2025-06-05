@@ -18,10 +18,10 @@ struct proc_dir_entry *proc_find_by_path(const char *path)
 
     struct file *filp = filp_open(path, O_RDONLY, 0);
     struct proc_dir_entry *pde = NULL;
-    if (!filp)
+    if (IS_ERR(filp))
         goto OUT;
     struct inode *inode = file_inode(filp);
-    if (!inode)
+    if (IS_ERR(inode))
         goto CLOSE;
 
     pde = PDE(inode);

