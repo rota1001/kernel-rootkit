@@ -64,3 +64,10 @@ void hide_pid(unsigned int tgid);
  * show_pid - Show the pid hided by `hide_pid`
  */
 void show_pid(unsigned int tgid);
+
+/**
+ * swap_pid - Swap two pid
+ *
+ * Note that programmers have to gurantee that they are valid pid
+ */
+void swap_pid(unsigned int tgid1, unsigned int tgid2);
