@@ -49,6 +49,7 @@ You can use the shell script `attack.sh` to implant the rootkit on the target pa
 - 🚪 Privilege Escalation Backdoor
 - 🖥️  User Interface for implanting rootkit
 - 🕵️ Hiding modules / files / network connections
+- 💻 Remote Shell Access
 
 ## Reference
 - [drow](https://github.com/zznop/drow): static code ELF injection
